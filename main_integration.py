@@ -5,25 +5,37 @@ import time
 from dashboard.ui_main import DashboardApp
 
 def run_cpp_backend(app):
-    # gonna run the cpp exe here later with popen
-    time.sleep(2)
-    
-    # dummy outputs for now to test ui
-    fake_cpp_stdout = [
-        '{"event": "access", "address": 1000, "hit": false, "stride_info": {"stride": 0, "predicted_next": 1000}}',
-        '{"event": "access", "address": 1008, "hit": false, "stride_info": {"stride": 8, "predicted_next": 1016}}',
-        '{"event": "access", "address": 1016, "hit": true, "stride_info": {"stride": 8, "predicted_next": 1024}}',
-        '{"event": "access", "address": 1024, "hit": true, "stride_info": {"stride": 8, "predicted_next": 1032}}'
-    ]
-    
-    for line in fake_cpp_stdout:
-        app.update_cache_status(line)
-        time.sleep(3)
+    try:
+        print("Starting C++ Backend...")
+        
+        process = subprocess.Popen(
+            ["backend_main.exe"],                  
+            stdout=subprocess.PIPE,                
+            text=True,                             
+            bufsize=1,                             
+            universal_newlines=True
+        )
+        
+        print("C++ Backend launched successfully!")
+        
+        for line in process.stdout:
+            line = line.strip()
+            if line:                               
+                app.update_cache_status(line)      
+                
+        process.wait()
+        
+    except FileNotFoundError:
+        print("ERROR: Could not find 'backend_main.exe'")
+        print("Make sure backend_main.exe is in the same folder as this Python file.")
+        print("You can also run build.bat first to generate it.")
+        
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
 def main():
     app = DashboardApp()
     
-    # put the cpp listener on diff thread so window doesn't crash
     backend_thread = threading.Thread(target=run_cpp_backend, args=(app,), daemon=True)
     backend_thread.start()
     
